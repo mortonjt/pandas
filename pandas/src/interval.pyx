@@ -47,6 +47,25 @@ cdef class Interval(IntervalMixin):
     cdef readonly object left, right
     cdef readonly str closed
 
+    overlap_mapping = {
+       ('left', 'left'): lambda x, y: 'left'
+       ('left', 'right'): lambda x, y: if x.__contains__(y) 'left' else: 'both'
+       ('left', 'both'): lambda x, y: if x.__contains__(y) 'left' else: 'both'
+       ('left', 'neither'):
+       ('right', 'left'):
+       ('right', 'right'):
+       ('right', 'both'):
+       ('right', 'neither'):
+       ('both', 'left'):
+       ('both', 'right'):
+       ('both', 'both'):
+       ('both', 'neither'):
+       ('neither', 'left'):
+       ('neither', 'right'):
+       ('neither', 'both'):
+       ('neither', 'neither'):
+      }
+
     def __init__(self, left, right, str closed='right'):
         # note: it is faster to just do these checks than to use a special
         # constructor (__cinit__/__new__) to avoid them
@@ -137,25 +156,51 @@ cdef class Interval(IntervalMixin):
                         (type(self).__name__, type(y).__name__))
 
     def overlap(self, y):
+        """
+        Checks to see if two Intervals overlap
+
+        Parameters
+        ----------
+        y : pd.Interval
+           An interval.
+
+        Returns
+        -------
+        bool : Indicates if the two intervals overlap or not.
+        """
         if not isinstance(y, Interval):
             raise TypeError("unsupported operand type(s) for &: '%s' and '%s'" %
                             (type(self).__name__, type(y).__name__))
-        return self.left <= y.right and y.left <= self.right
+
+        if self.closed in {'left', 'both'} and y.closed in {'right', 'both'}
+            left_end_overlap = self.left <= y.right
+        else:
+            left_end_overlap = self.left < y.right
+
+        if self.closed in {'left', 'both'} and y.closed in {'right', 'both'}
+            right_end_overlap = y.left <= self.right
+        else:
+            right_end_overlap = y.left < self.right
+        return left_end_overlap and right_end_overlap
 
     def intersect(self, y):
+        """
+        Checks to see if two Intervals overlap
+
+        Parameters
+        ----------
+        y : pd.Interval
+           An interval.
+        """
         if not isinstance(y, Interval):
             raise TypeError("unsupported operand type(s) for &: '%s' and '%s'" %
                             (type(self).__name__, type(y).__name__))
-        if not self.overlap(y):
-            # ideally, I would like to return an empty interval, and
-            # not raise a ValueError
-            raise ValueError("%s does not overlap with %s" % (self, y))
-        return Interval(max(self.left, y.left),
-                        min(self.right, y.right))
+        if self.overlap(y):
 
-    def __and__(self, y):
-        return self.intersect(y)
-
+            return Interval(max(self.left, y.left),
+                            min(self.right, y.right), closed)
+        else:
+            return
 
 @cython.wraparound(False)
 @cython.boundscheck(False)

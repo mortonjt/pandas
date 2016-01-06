@@ -68,9 +68,25 @@ class TestInterval(tm.TestCase):
         actual = self.interval + 1
         self.assertEqual(expected, actual)
 
+    def test_math_sub(self):
+        expected = Interval(-1, 0)
+        actual = self.interval - 1
+        self.assertEqual(expected, actual)
+
     def test_math_mult(self):
         expected = Interval(0, 2)
         actual = self.interval * 2
+        self.assertEqual(expected, actual)
+
+    def test_math_div(self):
+        expected = Interval(0, 0.5)
+        actual = self.interval / 2
+        self.assertEqual(expected, actual)
+
+    def test_math_intersect(self):
+        other = Interval(0.5, 2)
+        expected = Interval(0.5, 1)
+        actual = self.interval & other
         self.assertEqual(expected, actual)
 
 
